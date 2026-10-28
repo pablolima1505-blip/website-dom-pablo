@@ -74,6 +74,8 @@ const allNavigation = [
   { label: "Assinaturas", href: "/#clube" },
   { label: "Nosso Time", href: "/#time" },
   { label: "Contato", href: "/#contato" },
+  // Página de vagas, hospedada no app da Dom Pablo (Railway) e mostrada no próprio domínio
+  { label: "Faça parte do time", href: "https://www.dompablobarbearia.com.br/vagas" },
 ];
 
 const hiddenAnchors: Record<string, boolean> = {

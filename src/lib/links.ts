@@ -4,7 +4,7 @@ export const isPreview = process.env.NEXT_PUBLIC_PREVIEW === "1";
 
 /** Link interno. Na pré-visualização estática, aponta para os arquivos .html. */
 export function pageHref(path: string) {
-  if (!isPreview) return path;
+  if (!isPreview || /^https?:\/\//.test(path)) return path;
   const [p, hash] = path.split("#");
   const file = p === "/" || p === "" ? "./index.html" : `.${p}.html`;
   return hash ? (p === "/" ? `#${hash}` : `${file}#${hash}`) : file;
