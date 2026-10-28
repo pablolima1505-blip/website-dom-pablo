@@ -12,6 +12,16 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
+// Página de vagas: fica no app da Dom Pablo (Railway) e aparece dentro deste domínio.
+// /assets e /api são do app (este site usa /_next e não tem /api).
+const careersApp = process.env.CAREERS_APP_URL ?? "https://dom-performance-production.up.railway.app";
+const careersRewrites = [
+  { source: "/vagas", destination: `${careersApp}/vagas` },
+  { source: "/vagas/:path*", destination: `${careersApp}/vagas/:path*` },
+  { source: "/assets/:path*", destination: `${careersApp}/assets/:path*` },
+  { source: "/api/:path*", destination: `${careersApp}/api/:path*` },
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -21,6 +31,9 @@ const nextConfig: NextConfig = {
         images: { formats: ["image/avif", "image/webp"] },
         async headers() {
           return [{ source: "/:path*", headers: securityHeaders }];
+        },
+        async rewrites() {
+          return careersRewrites;
         },
       }),
 };
