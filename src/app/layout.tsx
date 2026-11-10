@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FloatingActions } from "@/components/layout/FloatingActions";
 import { Consent } from "@/components/layout/Consent";
+import { SiteMetrics } from "@/components/layout/SiteMetrics";
 import { ToastProvider } from "@/components/ui/Toast";
 import { MotionProvider } from "@/components/layout/MotionProvider";
 import "./globals.css";
@@ -103,6 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Footer />
               <FloatingActions />
               <Consent />
+              <SiteMetrics />
             </SmoothScroll>
           </ToastProvider>
         </MotionProvider>

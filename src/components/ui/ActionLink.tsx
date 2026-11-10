@@ -57,6 +57,8 @@ export function ActionLink({
     <a
       href={href ?? "#"}
       aria-label={ariaLabel}
+      data-ev={event}
+      data-label={eventLabel}
       {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       onClick={(e) => {
         if (!href) {

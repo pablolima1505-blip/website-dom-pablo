@@ -17,6 +17,11 @@ export default function PrivacidadePage() {
           aceite, nenhuma dessas ferramentas é carregada.
         </p>
         <p>
+          Também contamos, de forma anônima e sem cookies, as visitas e os toques nos botões do site (por exemplo, Agendar), com a cidade
+          aproximada e o tipo de aparelho. Não guardamos seu IP, nome ou telefone, e cada visita recebe um código temporário que some ao
+          fechar a página.
+        </p>
+        <p>
           Os dados coletados servem para entender como o site é usado e para medir o resultado das nossas campanhas. Não vendemos dados
           pessoais.
         </p>
