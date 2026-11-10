@@ -28,6 +28,12 @@ export async function POST(req: Request) {
   body.city = header(h, "x-vercel-ip-city");
   body.region = header(h, "x-vercel-ip-country-region");
   body.country = header(h, "x-vercel-ip-country");
+  // Internet do celular (Vivo, Claro, TIM) costuma sair por São Paulo, e a Vercel acha que a pessoa está lá.
+  // O fuso do aparelho não erra: celular em Mato Grosso usa America/Cuiaba. Nesse caso vale o fuso.
+  if (data.tz === "America/Cuiaba" && body.region !== "MT") {
+    body.city = "Cuiabá e região";
+    body.region = "MT";
+  }
   // robôs de busca não contam
   if (/bot|crawl|spider|facebookexternalhit|headless/i.test(String(body.ua))) return new Response(null, { status: 204 });
 
