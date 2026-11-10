@@ -70,6 +70,8 @@ export function Services({ services }: { services: Service[] }) {
                 <a
                   href={bookingHref({ url: s.bookingUrl, context: s.name }) ?? "#contato"}
                   aria-label={`Agendar ${s.name}`}
+                  data-ev="agendar_click"
+                  data-label={`servico-${s.id}`}
                   className="col-start-3 row-start-1 flex size-10 items-center justify-center border border-bone/20 text-bone md:hidden"
                 >
                   <ArrowUpRight strokeWidth={1.4} className="size-4" />

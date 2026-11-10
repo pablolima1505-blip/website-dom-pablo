@@ -25,6 +25,8 @@ const careersRewrites = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // route.live.ts (métricas em /evento) só entra no build de produção; o export estático não aceita POST
+  pageExtensions: isStaticExport ? ["tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js", "live.ts"],
   ...(isStaticExport
     ? { output: "export", images: { unoptimized: true } }
     : {
