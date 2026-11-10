@@ -1,5 +1,5 @@
 // Recebe visitas e cliques do próprio site e repassa ao app da Dom Pablo (tela "Site"), com a cidade aproximada que a Vercel
-// informa. Não grava IP. Só existe no build de produção (no export estático da prévia, a extensão .live.ts é ignorada).
+// informa. Não grava IP. Só existe no build de produção: a prévia estática (npm run preview) deixa esta pasta de fora.
 const APP = process.env.CAREERS_APP_URL ?? "https://dom-performance-production.up.railway.app";
 const FIELDS = ["kind", "button", "label", "sid", "secs", "path", "query", "referrer"] as const;
 
