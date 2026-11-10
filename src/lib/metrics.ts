@@ -31,7 +31,13 @@ function send(payload: Record<string, unknown>) {
   if (typeof window === "undefined" || isPreview) return;
   const s = session();
   if (!s) return;
-  const body = JSON.stringify({ sid: s.sid, secs: Math.round((Date.now() - s.t0) / 1000), path: location.pathname, ...payload });
+  let tz = "";
+  try {
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? ""; // fuso do aparelho: celular em MT = America/Cuiaba
+  } catch {
+    /* sem fuso */
+  }
+  const body = JSON.stringify({ sid: s.sid, secs: Math.round((Date.now() - s.t0) / 1000), path: location.pathname, tz, ...payload });
   try {
     if (navigator.sendBeacon?.("/evento", new Blob([body], { type: "application/json" }))) return;
   } catch {
