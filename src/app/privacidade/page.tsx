@@ -14,7 +14,9 @@ export default function PrivacidadePage() {
       <div className="mt-10 space-y-6 text-[0.95rem] leading-[1.8] text-bone/70">
         <p>
           Este site usa cookies de medição (Google Analytics 4 e Meta Pixel) somente depois que você aceita no aviso de cookies. Sem o seu
-          aceite, nenhuma dessas ferramentas é carregada.
+          aceite, nenhuma dessas ferramentas é carregada. Com o aceite, também avisamos a Meta pelo nosso servidor (API de Conversões)
+          quando você abre uma página ou toca em Agendar ou WhatsApp, junto com o endereço IP e o navegador usados naquele momento, para
+          medir os anúncios. Não enviamos seu nome, telefone ou e-mail.
         </p>
         <p>
           Também contamos, de forma anônima e sem cookies, as visitas e os toques nos botões do site (por exemplo, Agendar), com a cidade

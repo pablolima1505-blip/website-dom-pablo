@@ -103,7 +103,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <main id="conteudo">{children}</main>
               <Footer />
               <FloatingActions />
-              <Consent />
+              <Consent pixelId={process.env.META_PIXEL_ID || site.analytics.metaPixelId} />
               <SiteMetrics />
             </SmoothScroll>
           </ToastProvider>

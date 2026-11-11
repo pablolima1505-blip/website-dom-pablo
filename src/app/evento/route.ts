@@ -1,5 +1,8 @@
 // Recebe visitas e cliques do próprio site e repassa ao app da Dom Pablo (tela "Site"), com a cidade aproximada que a Vercel
 // informa. Não grava IP. Só existe no build de produção: a prévia estática (npm run preview) deixa esta pasta de fora.
+// Contatos (Agendar/WhatsApp) e PageView de quem aceitou cookies também vão para a API de Conversões da Meta (./meta.ts).
+import { sendToMeta } from "./meta";
+
 const APP = process.env.CAREERS_APP_URL ?? "https://dom-performance-production.up.railway.app";
 const FIELDS = ["kind", "button", "label", "sid", "secs", "path", "query", "referrer"] as const;
 
@@ -16,7 +19,7 @@ const header = (h: Headers, name: string) => {
 export async function POST(req: Request) {
   let data: Record<string, unknown>;
   try {
-    data = JSON.parse((await req.text()).slice(0, 4000));
+    data = JSON.parse((await req.text()).slice(0, 8000));
   } catch {
     return new Response(null, { status: 400 });
   }
@@ -37,8 +40,12 @@ export async function POST(req: Request) {
   // robôs de busca não contam
   if (/bot|crawl|spider|facebookexternalhit|headless/i.test(String(body.ua))) return new Response(null, { status: 204 });
 
+  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || null;
+  const meta = await sendToMeta(data, ip, String(body.ua));
+  if (data.kind === "pageview") return new Response(null, { status: 204 }); // PageView é só da Meta; o app conta pela visita
+  if (meta) body.meta = meta; // o app mostra quantos contatos foram para a Meta (enviado / sem aceite / erro)
+
   const headers: Record<string, string> = { "content-type": "application/json" };
-  const ip = h.get("x-forwarded-for")?.split(",")[0].trim();
   if (ip) headers["x-visitor-ip"] = ip; // só para o limite contra robô no app; não é gravado
   if (process.env.SITE_EVENTS_KEY) headers["x-site-key"] = process.env.SITE_EVENTS_KEY;
   try {
