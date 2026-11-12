@@ -5,9 +5,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { site } from "@/config/site";
 import { pageHref } from "@/lib/links";
+import { CONSENT_KEY as KEY, metricPageView } from "@/lib/metrics";
 
 type Choice = "granted" | "denied" | null;
-const KEY = "dp-consent-v1";
 
 function read(): Choice {
   try {
@@ -21,9 +21,12 @@ function read(): Choice {
 /**
  * Consentimento (LGPD) + carregamento de GA4 e Meta Pixel.
  * Nada de medição carrega antes do "Aceitar". Sem IDs configurados, o banner não aparece.
+ * O ID do Pixel vem do servidor (META_PIXEL_ID na Vercel). Ele é público por natureza; o token da API de Conversões não
+ * passa por aqui.
  */
-export function Consent() {
-  const { ga4Id, metaPixelId } = site.analytics;
+export function Consent({ pixelId }: { pixelId?: string | null }) {
+  const { ga4Id } = site.analytics;
+  const metaPixelId = pixelId && /^\d{5,20}$/.test(pixelId) ? pixelId : null;
   const hasTracking = Boolean(ga4Id || metaPixelId);
   const [choice, setChoice] = useState<Choice>(null);
   const [ready, setReady] = useState(false);
@@ -32,6 +35,11 @@ export function Consent() {
     setChoice(read());
     setReady(true);
   }, []);
+
+  // PageView na API de Conversões, com o mesmo código do PageView do Pixel (a Meta conta um só)
+  useEffect(() => {
+    if (choice === "granted" && metaPixelId) metricPageView();
+  }, [choice, metaPixelId]);
 
   const decide = (c: Exclude<Choice, null>) => {
     try {
@@ -56,7 +64,7 @@ gtag('js',new Date());gtag('config','${ga4Id}',{anonymize_ip:true});`}
       )}
       {choice === "granted" && metaPixelId && (
         <Script id="meta-pixel" strategy="afterInteractive">
-          {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${metaPixelId}');fbq('track','PageView');`}
+          {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${metaPixelId}');window.__dpPV=window.__dpPV||(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));fbq('track','PageView',{},{eventID:window.__dpPV});`}
         </Script>
       )}
 

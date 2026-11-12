@@ -2,6 +2,10 @@
  * Métricas próprias (tela "Site" no app da Dom Pablo). Anônimas: nada de cookie, IP, nome ou telefone.
  * Cada aba aberta ganha um código aleatório que some ao fechar (sessionStorage).
  * O envio vai para /evento (este site), que junta a cidade aproximada da Vercel e repassa ao app.
+ *
+ * Meta (Pixel + API de Conversões): só para quem tocou em "Aceitar" no aviso de cookies. Cada evento ganha um código
+ * (event_id) que vai igual para o Pixel (navegador) e para a API de Conversões (servidor, em /evento), e a Meta junta
+ * os dois em um só. O token da API fica só no servidor da Vercel; aqui no navegador não existe.
  */
 import { isPreview } from "./links";
 
@@ -25,6 +29,66 @@ function session(): { sid: string; t0: number; isNew: boolean } | null {
   } catch {
     return null; // navegador bloqueou o armazenamento: não mede
   }
+}
+
+export const CONSENT_KEY = "dp-consent-v1";
+
+/** O visitante aceitou os cookies de medição (aviso de cookies). Sem isso, nada vai para a Meta. */
+export function consented() {
+  try {
+    return localStorage.getItem(CONSENT_KEY) === "granted";
+  } catch {
+    return false;
+  }
+}
+
+declare global {
+  interface Window {
+    __dpPV?: string;
+  }
+}
+
+const newId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/** Código do PageView desta página: o mesmo no Pixel (script do aviso de cookies) e na API de Conversões. */
+export function pageViewId() {
+  if (typeof window === "undefined") return "";
+  return (window.__dpPV ||= newId());
+}
+
+type MetaEvent = { name: "PageView" | "Contact"; id: string; params?: Record<string, string> };
+
+/** Dispara no Pixel (se já carregou) e devolve o mesmo evento para a API de Conversões. Sem aceite: nada. */
+function metaEvent(name: MetaEvent["name"], params?: Record<string, string>): MetaEvent | null {
+  if (!consented()) return null;
+  const id = newId();
+  try {
+    window.fbq?.("track", name, params ?? {}, { eventID: id });
+  } catch {
+    /* Pixel bloqueado: a API de Conversões ainda recebe */
+  }
+  return { name, id, params };
+}
+
+const cookie = (name: string) => document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1] ?? null;
+const FBC = "dp_fbc";
+
+/** Identificadores da própria Meta (cookies _fbp/_fbc e fbclid do anúncio), que ajudam a Meta a reconhecer o clique. */
+function metaIds() {
+  let fbc = cookie("_fbc");
+  try {
+    const fbclid = new URLSearchParams(location.search).get("fbclid");
+    if (fbclid && !sessionStorage.getItem(FBC)?.endsWith(`.${fbclid}`)) sessionStorage.setItem(FBC, `fb.1.${Date.now()}.${fbclid}`);
+    fbc ||= sessionStorage.getItem(FBC);
+  } catch {
+    /* sem armazenamento */
+  }
+  return { fbp: cookie("_fbp"), fbc };
+}
+
+function withMeta(payload: Record<string, unknown>, events: (MetaEvent | null)[]) {
+  const meta = events.filter((e): e is MetaEvent => Boolean(e));
+  return { ...payload, consent: consented(), ...(meta.length ? { meta, url: location.href.slice(0, 500), ...metaIds() } : {}) };
 }
 
 function send(payload: Record<string, unknown>) {
@@ -53,7 +117,25 @@ export function metricVisit() {
   send({ kind: "visita", query: location.search.slice(0, 500), referrer: document.referrer.slice(0, 500) });
 }
 
-export const metricClick = (button: MetricButton, label?: string | null) => send({ kind: "clique", button, label: label?.slice(0, 80) ?? null });
+/**
+ * Toque em botão. Agendar e WhatsApp abrem a conversa no WhatsApp: um único Contact por toque (content_name diz qual botão).
+ * Lead NÃO sai do site: o site só sabe que a pessoa abriu o WhatsApp, não que mandou mensagem ou é um contato qualificado.
+ */
+export function metricClick(button: MetricButton, label?: string | null) {
+  const base = { kind: "clique", button, label: label?.slice(0, 80) ?? null };
+  if (button === "agendar" || button === "whatsapp")
+    return send(withMeta(base, [metaEvent("Contact", { content_name: button, content_category: label?.slice(0, 80) || "site" })]));
+  send(base);
+}
+
+/** PageView para a API de Conversões (o Pixel dispara o seu no script do aviso de cookies, com o mesmo código). */
+let pageViewSent = false;
+export function metricPageView() {
+  if (pageViewSent || !consented()) return;
+  pageViewSent = true;
+  send(withMeta({ kind: "pageview" }, [{ name: "PageView", id: pageViewId() }]));
+}
+
 export const metricExit = () => send({ kind: "saida" });
 
 const FROM_EVENT: Record<string, MetricButton> = {
