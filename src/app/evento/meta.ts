@@ -3,9 +3,11 @@
 // Só envia o que o visitante aceitou no aviso de cookies. Nada de nome, telefone ou e-mail: só IP e navegador (exigidos pela
 // Meta para reconhecer o evento) e os cookies da própria Meta (_fbp/_fbc).
 
-export type MetaStatus = "enviado" | "erro" | "sem_aceite";
+// aceito = a Meta respondeu que recebeu todos os eventos (events_received); erro = recusou ou não respondeu;
+// sem_aceite = visitante não aceitou cookies (nada enviado); teste = foi para a aba "Testar eventos" (não é resultado real).
+export type MetaStatus = "aceito" | "erro" | "sem_aceite" | "teste";
 
-const NAMES = new Set(["PageView", "Contact", "Lead"]);
+const NAMES = new Set(["PageView", "Contact"]); // Lead não sai do site: só com contato confirmado
 const ID = /^[A-Za-z0-9._-]{8,64}$/;
 const FB_COOKIE = /^fb\.\d\.\d{10,16}\.[A-Za-z0-9_.-]{1,500}$/;
 
@@ -13,8 +15,12 @@ type Incoming = { name?: unknown; id?: unknown; params?: unknown };
 
 function cleanParams(p: unknown): Record<string, string> | undefined {
   if (!p || typeof p !== "object") return undefined;
-  const name = (p as Record<string, unknown>).content_name;
-  return typeof name === "string" && name ? { content_name: name.slice(0, 80) } : undefined;
+  const out: Record<string, string> = {};
+  for (const k of ["content_name", "content_category"]) {
+    const v = (p as Record<string, unknown>)[k];
+    if (typeof v === "string" && v) out[k] = v.slice(0, 80);
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 /** Monta os eventos para a Meta a partir do que o navegador mandou. Ignora qualquer coisa fora do combinado. */
@@ -46,7 +52,7 @@ export function buildEvents(data: Record<string, unknown>, ip: string | null, ua
 
 /**
  * Envia para a Meta. Devolve null quando não há o que enviar (botão que não é contato, ou Meta não configurada),
- * "sem_aceite" quando o visitante não aceitou cookies, "enviado" ou "erro".
+ * "sem_aceite" quando o visitante não aceitou cookies, "aceito" (a Meta confirmou o recebimento), "teste" ou "erro".
  */
 export async function sendToMeta(data: Record<string, unknown>, ip: string | null, ua: string): Promise<MetaStatus | null> {
   const pixel = process.env.META_PIXEL_ID;
@@ -59,7 +65,8 @@ export async function sendToMeta(data: Record<string, unknown>, ip: string | nul
   const graph = process.env.META_GRAPH_URL ?? "https://graph.facebook.com";
   const version = process.env.META_GRAPH_VERSION ?? "v23.0";
   const body: Record<string, unknown> = { data: events, access_token: token };
-  if (process.env.META_TEST_EVENT_CODE) body.test_event_code = process.env.META_TEST_EVENT_CODE;
+  const test = Boolean(process.env.META_TEST_EVENT_CODE);
+  if (test) body.test_event_code = process.env.META_TEST_EVENT_CODE;
   try {
     const r = await fetch(`${graph}/${version}/${pixel}/events`, {
       method: "POST",
@@ -67,8 +74,15 @@ export async function sendToMeta(data: Record<string, unknown>, ip: string | nul
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(4000),
     });
-    if (r.ok) return "enviado";
-    console.error("Meta CAPI recusou:", r.status, (await r.text()).slice(0, 300)); // resposta da Meta, sem o token
+    const text = (await r.text()).slice(0, 500);
+    let received = -1;
+    try {
+      received = Number(JSON.parse(text).events_received);
+    } catch {
+      /* resposta fora do padrão */
+    }
+    if (r.ok && received === events.length) return test ? "teste" : "aceito";
+    console.error("Meta CAPI recusou:", r.status, text.slice(0, 300)); // resposta da Meta, sem o token
     return "erro";
   } catch (err) {
     console.error("Meta CAPI fora do ar:", (err as Error).message);

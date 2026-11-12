@@ -56,7 +56,7 @@ export function pageViewId() {
   return (window.__dpPV ||= newId());
 }
 
-type MetaEvent = { name: "PageView" | "Contact" | "Lead"; id: string; params?: Record<string, string> };
+type MetaEvent = { name: "PageView" | "Contact"; id: string; params?: Record<string, string> };
 
 /** Dispara no Pixel (se já carregou) e devolve o mesmo evento para a API de Conversões. Sem aceite: nada. */
 function metaEvent(name: MetaEvent["name"], params?: Record<string, string>): MetaEvent | null {
@@ -117,12 +117,14 @@ export function metricVisit() {
   send({ kind: "visita", query: location.search.slice(0, 500), referrer: document.referrer.slice(0, 500) });
 }
 
-/** Toque em botão. Agendar abre a conversa no WhatsApp: vira Lead + Contact na Meta. WhatsApp: Contact. */
+/**
+ * Toque em botão. Agendar e WhatsApp abrem a conversa no WhatsApp: um único Contact por toque (content_name diz qual botão).
+ * Lead NÃO sai do site: o site só sabe que a pessoa abriu o WhatsApp, não que mandou mensagem ou é um contato qualificado.
+ */
 export function metricClick(button: MetricButton, label?: string | null) {
   const base = { kind: "clique", button, label: label?.slice(0, 80) ?? null };
-  const params = label ? { content_name: label.slice(0, 80) } : undefined;
-  if (button === "agendar") return send(withMeta(base, [metaEvent("Lead", params), metaEvent("Contact", params)]));
-  if (button === "whatsapp") return send(withMeta(base, [metaEvent("Contact", params)]));
+  if (button === "agendar" || button === "whatsapp")
+    return send(withMeta(base, [metaEvent("Contact", { content_name: button, content_category: label?.slice(0, 80) || "site" })]));
   send(base);
 }
 

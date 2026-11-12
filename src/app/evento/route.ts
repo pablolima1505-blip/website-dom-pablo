@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const ip = h.get("x-forwarded-for")?.split(",")[0].trim() || null;
   const meta = await sendToMeta(data, ip, String(body.ua));
   if (data.kind === "pageview") return new Response(null, { status: 204 }); // PageView é só da Meta; o app conta pela visita
-  if (meta) body.meta = meta; // o app mostra quantos contatos foram para a Meta (enviado / sem aceite / erro)
+  if (meta) body.meta = meta; // o app mostra quantos contatos foram para a Meta (aceito / erro / sem aceite / teste)
 
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (ip) headers["x-visitor-ip"] = ip; // só para o limite contra robô no app; não é gravado
