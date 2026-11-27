@@ -1,6 +1,5 @@
 import { Check } from "lucide-react";
 import type { Plan } from "@/types/content";
-import { ActionLink } from "@/components/ui/ActionLink";
 import { PlaceholderTag } from "@/components/ui/PlaceholderTag";
 
 export function PlanCard({ plan, compact = false }: { plan: Plan; compact?: boolean }) {
@@ -65,18 +64,6 @@ export function PlanCard({ plan, compact = false }: { plan: Plan; compact?: bool
         )}
       </div>
 
-      <div className={`mt-auto ${compact ? "pt-8" : "pt-10"}`}>
-        <ActionLink
-          href={plan.checkoutUrl}
-          variant={featured ? "primary" : "outline"}
-          event="assinatura_click"
-          eventLabel={plan.id}
-          missing={`Checkout do plano ${plan.name} ainda não configurado. Conecte o provedor de assinaturas em src/content/plans.ts.`}
-          className="w-full"
-        >
-          Quero ser assinante
-        </ActionLink>
-      </div>
     </article>
   );
 }

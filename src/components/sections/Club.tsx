@@ -53,9 +53,6 @@ export function Club({ plans, standalone = false }: { plans: Plan[]; standalone?
 
         {!standalone && (
           <Reveal className="mt-10 flex flex-col items-center gap-5 text-center md:mt-14">
-            <ActionLink href={pageHref("/assinaturas")} event="assinatura_click" eventLabel="clube-cta">
-              Quero ser assinante
-            </ActionLink>
             <ActionLink href={pageHref("/assinaturas")} variant="ghost" icon={false}>
               Ver todos os detalhes dos planos
             </ActionLink>
