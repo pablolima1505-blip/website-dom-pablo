@@ -8,6 +8,7 @@
  * os dois em um só. O token da API fica só no servidor da Vercel; aqui no navegador não existe.
  */
 import { isPreview } from "./links";
+import { siteCode } from "./siteCode";
 
 export type MetricButton = "agendar" | "whatsapp" | "vagas" | "instagram" | "rota" | "assinatura" | "navegacao" | "outro";
 
@@ -29,6 +30,13 @@ function session(): { sid: string; t0: number; isNew: boolean } | null {
   } catch {
     return null; // navegador bloqueou o armazenamento: não mede
   }
+}
+
+/** Código desta visita para a mensagem do WhatsApp (null se o navegador bloqueou o armazenamento). */
+export function visitCode(): string | null {
+  if (typeof window === "undefined") return null;
+  const s = session();
+  return s ? siteCode(s.sid) : null;
 }
 
 export const CONSENT_KEY = "dp-consent-v1";
